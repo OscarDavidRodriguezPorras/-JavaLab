@@ -1,0 +1,22 @@
+{
+  "name": "javalab",
+  "version": "0.1.0",
+  "description": "JavaLab — plataforma educativa para aprender Java con apuntes, ejercicios, editor de código y gamificación. Node.js + Express + Google Drive como almacenamiento.",
+  "main": "backend/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node --watch backend/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "googleapis": "^140.0.1",
+    "morgan": "^1.10.0",
+    "uuid": "^9.0.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

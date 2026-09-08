@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JavaLab — Ejercicios</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <div id="sidebar-root"></div>
+
+    <main class="main">
+      <div id="topbar-root"></div>
+
+      <div class="section-title">
+        <h2>💻 Ejercicios</h2>
+        <button class="btn btn--primary" id="generate-btn">🤖 Generar ejercicios</button>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px; display:flex; gap:12px; flex-wrap:wrap;">
+        <select class="select" id="topic-filter" style="max-width: 200px;">
+          <option value="">Todos los temas</option>
+        </select>
+        <select class="select" id="difficulty-filter" style="max-width: 180px;">
+          <option value="">Cualquier dificultad</option>
+          <option value="easy">Fácil</option>
+          <option value="medium">Medio</option>
+          <option value="hard">Difícil</option>
+        </select>
+      </div>
+
+      <div id="exercises-list" class="grid grid--cards"></div>
+    </main>
+  </div>
+
+  <div class="modal-overlay hidden" id="generate-modal">
+    <div class="modal">
+      <div class="modal__header">
+        <h2>🤖 Generar ejercicios</h2>
+        <button class="modal__close" id="generate-modal-close">✕</button>
+      </div>
+      <form id="generate-form">
+        <div class="field">
+          <label for="gen-topics">Tema(s) (separados por coma)</label>
+          <input class="input" id="gen-topics" required placeholder="Ej. Variables, Condicionales" />
+        </div>
+        <div class="field">
+          <label for="gen-difficulty">Dificultad</label>
+          <select class="select" id="gen-difficulty">
+            <option value="easy">Fácil</option>
+            <option value="medium">Medio</option>
+            <option value="hard">Difícil</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="gen-count">Cantidad</label>
+          <input class="input" id="gen-count" type="number" min="1" max="10" value="5" />
+        </div>
+        <button type="submit" class="btn btn--primary btn--block" id="generate-submit-btn">Generar</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/toast.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/exercises.js"></script>
+</body>
+</html>
