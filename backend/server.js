@@ -15,6 +15,7 @@ const projectsRoutes = require("./routes/projects");
 const aiRoutes = require("./routes/ai");
 const codeRoutes = require("./routes/code");
 const imagesRoutes = require("./routes/images");
+const authRoutes = require("./routes/auth");
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use("/api/projects", projectsRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/code", codeRoutes);
 app.use("/api/images", imagesRoutes);
+app.use("/api/auth", authRoutes);
 
 app.use("/api", notFound);
 app.use(errorHandler);

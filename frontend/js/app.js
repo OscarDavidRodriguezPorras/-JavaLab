@@ -40,7 +40,7 @@ function renderLayout(activeKey) {
       </nav>
       <div class="sidebar__footer">
         <a class="nav-item" href="#" id="reset-profile-link">
-          <span class="nav-item__icon">⚙️</span> Reiniciar perfil
+          <span class="nav-item__icon">🚪</span> Cerrar sesión
         </a>
       </div>
     </aside>
@@ -67,7 +67,7 @@ function renderLayout(activeKey) {
   if (resetLink) {
     resetLink.addEventListener("click", (e) => {
       e.preventDefault();
-      if (confirm("Esto olvidará tu perfil en este navegador (tus datos siguen en Google Drive). ¿Continuar?")) {
+      if (confirm("¿Cerrar sesión? Tendrás que volver a ingresar tu correo y contraseña la próxima vez.")) {
         localStorage.removeItem("javalab_user_id");
         location.reload();
       }
@@ -86,38 +86,85 @@ function renderTopbarUser() {
   `;
 }
 
-function showOnboardingModal() {
+function showAuthModal() {
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay";
     overlay.innerHTML = `
       <div class="modal">
         <div class="modal__header"><h2>¡Bienvenido a JavaLab! 👋</h2></div>
-        <p style="color:var(--text-secondary); font-size: 13.5px; margin-top:-6px;">
-          Cuéntanos cómo te llamas para crear tu perfil. Tus apuntes, ejercicios y progreso
-          se guardarán en tu cuenta de Google Drive configurada en el backend.
-        </p>
-        <form id="onboarding-form">
+
+        <div style="display:flex; gap:8px; margin-bottom:18px;">
+          <button type="button" class="btn btn--ghost btn--sm is-active" id="tab-login" style="flex:1;">Iniciar sesión</button>
+          <button type="button" class="btn btn--ghost btn--sm" id="tab-register" style="flex:1;">Crear cuenta</button>
+        </div>
+
+        <form id="login-form">
           <div class="field">
-            <label for="ob-name">Nombre</label>
-            <input class="input" id="ob-name" required placeholder="Ej. Oscar David" />
+            <label for="login-email">Correo</label>
+            <input class="input" id="login-email" type="email" required placeholder="tú@correo.com" />
           </div>
           <div class="field">
-            <label for="ob-email">Correo</label>
-            <input class="input" id="ob-email" type="email" required placeholder="tú@correo.com" />
+            <label for="login-password">Contraseña</label>
+            <input class="input" id="login-password" type="password" required placeholder="••••••••" />
           </div>
-          <button type="submit" class="btn btn--primary btn--block">Crear mi perfil</button>
+          <button type="submit" class="btn btn--primary btn--block">Entrar</button>
+        </form>
+
+        <form id="register-form" class="hidden">
+          <div class="field">
+            <label for="reg-name">Nombre</label>
+            <input class="input" id="reg-name" required placeholder="Ej. Oscar David" />
+          </div>
+          <div class="field">
+            <label for="reg-email">Correo</label>
+            <input class="input" id="reg-email" type="email" required placeholder="tú@correo.com" />
+          </div>
+          <div class="field">
+            <label for="reg-password">Contraseña</label>
+            <input class="input" id="reg-password" type="password" required minlength="6" placeholder="Mínimo 6 caracteres" />
+          </div>
+          <button type="submit" class="btn btn--primary btn--block">Crear cuenta</button>
         </form>
       </div>
     `;
     document.body.appendChild(overlay);
-    overlay.querySelector("#onboarding-form").addEventListener("submit", async (e) => {
+
+    const loginForm = overlay.querySelector("#login-form");
+    const registerForm = overlay.querySelector("#register-form");
+    const tabLogin = overlay.querySelector("#tab-login");
+    const tabRegister = overlay.querySelector("#tab-register");
+
+    function showTab(tab) {
+      loginForm.classList.toggle("hidden", tab !== "login");
+      registerForm.classList.toggle("hidden", tab !== "register");
+      tabLogin.classList.toggle("is-active", tab === "login");
+      tabRegister.classList.toggle("is-active", tab === "register");
+    }
+    tabLogin.addEventListener("click", () => showTab("login"));
+    tabRegister.addEventListener("click", () => showTab("register"));
+
+    loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const name = overlay.querySelector("#ob-name").value.trim();
-      const email = overlay.querySelector("#ob-email").value.trim();
-      if (!name || !email) return;
+      const email = overlay.querySelector("#login-email").value.trim();
+      const password = overlay.querySelector("#login-password").value;
       try {
-        const user = await api.users.create({ name, email });
+        const user = await api.auth.login({ email, password });
+        localStorage.setItem("javalab_user_id", user.id);
+        overlay.remove();
+        resolve(user);
+      } catch (err) {
+        showToast(err.message, "error");
+      }
+    });
+
+    registerForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = overlay.querySelector("#reg-name").value.trim();
+      const email = overlay.querySelector("#reg-email").value.trim();
+      const password = overlay.querySelector("#reg-password").value;
+      try {
+        const user = await api.auth.register({ name, email, password });
         localStorage.setItem("javalab_user_id", user.id);
         overlay.remove();
         resolve(user);
@@ -139,7 +186,7 @@ async function bootstrapUser() {
       localStorage.removeItem("javalab_user_id");
     }
   }
-  const user = await showOnboardingModal();
+  const user = await showAuthModal();
   JavaLab.user = user;
   return user;
 }

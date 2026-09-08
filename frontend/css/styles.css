@@ -314,6 +314,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .btn--ghost:hover { background: var(--bg-panel-hover); }
 .btn--danger { background: rgba(255,107,122,0.12); color: var(--accent-coral); border: 1px solid rgba(255,107,122,0.3); }
 .btn--sm { padding: 6px 12px; font-size: 12.5px; }
+.btn.is-active { background: var(--bg-panel-hover); border-color: var(--accent-blue); color: var(--accent-blue); }
 .btn--block { width: 100%; justify-content: center; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 

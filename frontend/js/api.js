@@ -46,8 +46,12 @@ const api = {
 
   users: {
     get: (id) => request(`/users/${id}`),
-    create: (payload) => request("/users", { method: "POST", body: payload }),
     update: (id, patch) => request(`/users/${id}`, { method: "PUT", body: patch }),
+  },
+
+  auth: {
+    register: (payload) => request("/auth/register", { method: "POST", body: payload }),
+    login: (payload) => request("/auth/login", { method: "POST", body: payload }),
   },
 
   notes: {
@@ -57,6 +61,7 @@ const api = {
     update: (id, patch) => request(`/notes/${id}`, { method: "PUT", body: patch }),
     remove: (id) => request(`/notes/${id}`, { method: "DELETE" }),
     uploadImage: (id, payload) => request(`/notes/${id}/images`, { method: "POST", body: payload }),
+    deleteImage: (id, fileId) => request(`/notes/${id}/images/${fileId}`, { method: "DELETE" }),
   },
 
   exercises: {
