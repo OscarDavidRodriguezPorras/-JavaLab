@@ -52,7 +52,11 @@ async function uploadImage(req, res) {
   }
 
   const uploaded = await drive.uploadImage(note.id, fileName, buffer, mimeType);
-  const image = { fileId: uploaded.id, url: uploaded.webViewLink, thumbnail: uploaded.thumbnailLink };
+  const image = {
+    fileId: uploaded.id,
+    url: `/api/images/${uploaded.id}`,
+    thumbnail: `/api/images/${uploaded.id}`,
+  };
 
   const updated = await notesService.updateNote(note.id, { images: [...(note.images || []), image] });
   res.status(201).json(updated);

@@ -267,6 +267,19 @@ class GoogleDriveService {
 
     return file.data;
   }
+
+  /**
+   * Descarga los bytes de una imagen directamente desde Drive, usando la misma
+   * conexión autenticada del backend (no depende de que Google permita "hotlinking").
+   * Devuelve { stream, mimeType } para que el controlador la reenvíe al navegador.
+   */
+  async getImageStream(fileId) {
+    await this.init();
+    const drive = this._client();
+    const meta = await drive.files.get({ fileId, fields: "mimeType" });
+    const res = await drive.files.get({ fileId, alt: "media" }, { responseType: "stream" });
+    return { stream: res.data, mimeType: meta.data.mimeType || "application/octet-stream" };
+  }
 }
 
 function bufferToStream(buffer) {

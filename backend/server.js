@@ -14,6 +14,7 @@ const progressRoutes = require("./routes/progress");
 const projectsRoutes = require("./routes/projects");
 const aiRoutes = require("./routes/ai");
 const codeRoutes = require("./routes/code");
+const imagesRoutes = require("./routes/images");
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use("/api/progress", progressRoutes);
 app.use("/api/projects", projectsRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/code", codeRoutes);
+app.use("/api/images", imagesRoutes);
 
 app.use("/api", notFound);
 app.use(errorHandler);
