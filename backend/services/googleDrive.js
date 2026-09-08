@@ -236,6 +236,14 @@ class GoogleDriveService {
     return true;
   }
 
+  /** Elimina un archivo de Drive directamente por su id (usado para borrar imágenes). */
+  async deleteFileById(fileId) {
+    await this.init();
+    const drive = this._client();
+    await drive.files.delete({ fileId });
+    return true;
+  }
+
   // ---------- Imágenes ----------
 
   /**

@@ -62,4 +62,20 @@ async function uploadImage(req, res) {
   res.status(201).json(updated);
 }
 
-module.exports = { listNotes, getNote, createNote, updateNote, deleteNote, uploadImage };
+/** DELETE /api/notes/:id/images/:fileId — borra la imagen de Drive y la quita de la lista del apunte. */
+async function deleteImage(req, res) {
+  const note = await notesService.getNote(req.params.id);
+  if (!note) throw new HttpError(404, `Apunte ${req.params.id} no encontrado`, "NOTE_NOT_FOUND");
+
+  const { fileId } = req.params;
+  const exists = (note.images || []).some((img) => img.fileId === fileId);
+  if (!exists) throw new HttpError(404, `Imagen ${fileId} no encontrada en este apunte`, "IMAGE_NOT_FOUND");
+
+  await drive.deleteFileById(fileId);
+  const updated = await notesService.updateNote(note.id, {
+    images: (note.images || []).filter((img) => img.fileId !== fileId),
+  });
+  res.json(updated);
+}
+
+module.exports = { listNotes, getNote, createNote, updateNote, deleteNote, uploadImage, deleteImage };

@@ -9,5 +9,6 @@ router.get("/:id", asyncHandler(controller.getNote));
 router.put("/:id", asyncHandler(controller.updateNote));
 router.delete("/:id", asyncHandler(controller.deleteNote));
 router.post("/:id/images", asyncHandler(controller.uploadImage));
+router.delete("/:id/images/:fileId", asyncHandler(controller.deleteImage));
 
 module.exports = router;

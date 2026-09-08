@@ -1,8 +1,8 @@
 let currentNote = null;
- 
+
 (async function main() {
   await initPage("notes");
- 
+
   const params = new URLSearchParams(location.search);
   const noteId = params.get("id");
   if (!noteId) {
@@ -10,7 +10,7 @@ let currentNote = null;
     window.location.href = "/pages/notes.html";
     return;
   }
- 
+
   try {
     currentNote = await api.notes.get(noteId);
   } catch (err) {
@@ -18,12 +18,12 @@ let currentNote = null;
     window.location.href = "/pages/notes.html";
     return;
   }
- 
+
   document.getElementById("doc-title").value = currentNote.title;
   document.getElementById("doc-category").value = currentNote.category;
   document.getElementById("doc-content").innerHTML = currentNote.content || "";
   renderImages();
- 
+
   wireToolbar();
   wirePasteAndDrop();
   document.getElementById("save-btn").addEventListener("click", saveNote);
@@ -34,7 +34,7 @@ let currentNote = null;
     if (e.target.id === "lightbox-overlay") closeLightbox();
   });
 })();
- 
+
 function wireToolbar() {
   document.querySelectorAll(".toolbar button[data-cmd]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -42,16 +42,16 @@ function wireToolbar() {
       document.execCommand(btn.dataset.cmd, false, btn.dataset.value || null);
     });
   });
- 
+
   document.getElementById("text-color").addEventListener("input", (e) => {
     document.getElementById("doc-content").focus();
     document.execCommand("foreColor", false, e.target.value);
   });
- 
+
   document.getElementById("uppercase-btn").addEventListener("click", () => transformSelection((t) => t.toUpperCase()));
   document.getElementById("lowercase-btn").addEventListener("click", () => transformSelection((t) => t.toLowerCase()));
 }
- 
+
 /** Transforma solo el texto seleccionado (may/minúsculas), sin tocar el resto del documento. */
 function transformSelection(fn) {
   const selection = window.getSelection();
@@ -65,7 +65,7 @@ function transformSelection(fn) {
   range.insertNode(document.createTextNode(fn(text)));
   selection.removeAllRanges();
 }
- 
+
 async function saveNote() {
   const title = document.getElementById("doc-title").value.trim();
   const category = document.getElementById("doc-category").value.trim() || "General";
@@ -81,7 +81,7 @@ async function saveNote() {
     showToast(err.message, "error");
   }
 }
- 
+
 async function deleteNote() {
   if (!confirm("¿Eliminar este apunte? Esta acción no se puede deshacer.")) return;
   try {
@@ -92,7 +92,7 @@ async function deleteNote() {
     showToast(err.message, "error");
   }
 }
- 
+
 function renderImages() {
   const el = document.getElementById("images-list");
   const images = currentNote.images || [];
@@ -101,31 +101,55 @@ function renderImages() {
     return;
   }
   el.innerHTML = images
-    .map((img) => `<img class="image-thumb" src="${img.thumbnail || img.url}" data-url="${img.url}" title="Clic para ver en grande" />`)
+    .map(
+      (img) => `
+    <div class="image-item">
+      <img class="image-thumb" src="${img.thumbnail || img.url}" data-url="${img.url}" title="Clic para ver en grande" />
+      <button type="button" class="image-delete-btn" data-file-id="${img.fileId}" title="Eliminar imagen">✕</button>
+    </div>`
+    )
     .join("");
- 
+
   el.querySelectorAll(".image-thumb").forEach((thumb) => {
     thumb.addEventListener("click", () => openLightbox(thumb.dataset.url));
   });
+
+  el.querySelectorAll(".image-delete-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deleteImage(btn.dataset.fileId);
+    });
+  });
 }
- 
+
+async function deleteImage(fileId) {
+  if (!confirm("¿Eliminar esta imagen? Esta acción no se puede deshacer.")) return;
+  try {
+    currentNote = await api.notes.deleteImage(currentNote.id, fileId);
+    renderImages();
+    showToast("Imagen eliminada", "success");
+  } catch (err) {
+    showToast(err.message, "error");
+  }
+}
+
 function openLightbox(url) {
   document.getElementById("lightbox-img").src = url;
   document.getElementById("lightbox-overlay").classList.remove("hidden");
 }
- 
+
 function closeLightbox() {
   document.getElementById("lightbox-overlay").classList.add("hidden");
   document.getElementById("lightbox-img").src = "";
 }
- 
+
 async function uploadImage(e) {
   const file = e.target.files[0];
   if (!file) return;
   await handleImageFile(file);
   e.target.value = "";
 }
- 
+
 /** Sube un archivo de imagen (venga de <input file>, arrastrar o pegar) y refresca la lista. */
 async function handleImageFile(file) {
   if (!file.type.startsWith("image/")) {
@@ -145,7 +169,7 @@ async function handleImageFile(file) {
     showToast(err.message, "error");
   }
 }
- 
+
 /** Escucha Ctrl+V en toda la página: si el portapapeles trae una imagen (captura, copiada de otra web, etc.), la sube. */
 function wirePasteAndDrop() {
   document.addEventListener("paste", (e) => {
@@ -156,7 +180,7 @@ function wirePasteAndDrop() {
     const file = imageItem.getAsFile();
     if (file) handleImageFile(file);
   });
- 
+
   const dropZone = document.getElementById("doc-content");
   dropZone.addEventListener("dragover", (e) => {
     e.preventDefault();
@@ -170,7 +194,7 @@ function wirePasteAndDrop() {
     if (file) handleImageFile(file);
   });
 }
- 
+
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
