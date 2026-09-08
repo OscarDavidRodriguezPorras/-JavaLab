@@ -78,7 +78,7 @@ async function loadRecentNotes(userId) {
         .slice(0, 3)
         .map(
           (n) => `
-        <a class="card" href="/pages/notes.html?open=${n.id}" style="display:block;">
+        <a class="card" href="/pages/note-editor.html?id=${n.id}" style="display:block;">
           <span class="chip">${n.category}</span>
           <h3 style="margin: 10px 0 6px; font-size: 15px;">${escapeHtml(n.title)}</h3>
           <p style="color:var(--text-muted); font-size:12.5px; margin:0;">${new Date(n.updatedAt).toLocaleDateString("es")}</p>
