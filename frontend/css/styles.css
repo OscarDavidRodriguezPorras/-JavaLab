@@ -116,6 +116,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   width: 30px; height: 30px;
   border-radius: 9px;
   background: var(--gradient-accent);
+  object-fit: cover;
   display: flex; align-items: center; justify-content: center;
   font-family: var(--font-mono);
   font-weight: 700;
@@ -160,7 +161,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 
 .main {
   padding: 28px 36px 60px;
-  max-width: 1180px;
+  width: 100%;
 }
 
 .topbar {

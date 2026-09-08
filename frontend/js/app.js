@@ -27,7 +27,7 @@ function renderLayout(activeKey) {
   sidebarRoot.innerHTML = `
     <aside class="sidebar" id="sidebar">
       <div class="sidebar__brand">
-        <div class="sidebar__brand-mark">&lt;/&gt;</div>
+        <img class="sidebar__brand-mark" src="/assets/logo.png" alt="JavaLab" />
         <div class="sidebar__brand-name">JavaLab</div>
       </div>
       <nav class="sidebar__nav">
