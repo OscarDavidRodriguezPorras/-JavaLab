@@ -31,11 +31,19 @@ const TYPE_LABELS = {
   document.getElementById("generate-form").addEventListener("submit", generateExercises);
 })();
 
+let completedIds = new Set();
+
 async function refreshExercises() {
   const list = document.getElementById("exercises-list");
   list.innerHTML = `<p class="empty-state">Cargando ejercicios…</p>`;
   try {
     allExercises = await api.exercises.list();
+    try {
+      const progress = await api.progress.get(JavaLab.user.id);
+      completedIds = new Set(Object.keys(progress.completedExercises || {}));
+    } catch {
+      completedIds = new Set();
+    }
     populateTopicFilter();
     renderExercises();
   } catch (err) {
@@ -68,20 +76,25 @@ function renderExercises() {
   }
 
   list.innerHTML = filtered
-    .map(
-      (ex) => `
-    <a class="card" href="/pages/editor.html?exercise=${ex.id}" style="display:block;">
+    .map((ex) => {
+      const isCompleted = completedIds.has(ex.id);
+      return `
+    <a class="card" href="/pages/editor.html?exercise=${ex.id}" style="display:block; ${isCompleted ? "opacity:0.75;" : ""}">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
         <span class="chip chip--${ex.difficulty}">${ex.difficulty}</span>
-        <span class="chip" style="color:var(--accent-amber); border-color: rgba(255,200,87,.3);">+${ex.xp} XP</span>
+        ${
+          isCompleted
+            ? `<span class="chip" style="color:var(--accent-green); border-color: rgba(74,222,128,.3);">✅ Completado</span>`
+            : `<span class="chip" style="color:var(--accent-amber); border-color: rgba(255,200,87,.3);">+${ex.xp} XP</span>`
+        }
       </div>
       <h3 style="font-size: 15px; margin-bottom: 6px;">${escapeHtml(ex.title)}</h3>
       <p style="color:var(--text-muted); font-size:12px; margin: 0 0 8px;">${TYPE_LABELS[ex.type] || ex.type}</p>
       <div style="display:flex; gap:6px; flex-wrap:wrap;">
         ${(ex.topics || []).map((t) => `<span class="chip">${t}</span>`).join("")}
       </div>
-    </a>`
-    )
+    </a>`;
+    })
     .join("");
 }
 

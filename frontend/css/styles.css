@@ -159,6 +159,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   border-top: 1px solid var(--border-subtle);
 }
 
+.sidebar__credit {
+  margin: 14px 12px 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.sidebar__credit a {
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.sidebar__credit a:hover { color: var(--accent-blue); }
+
 .main {
   padding: 28px 36px 60px;
   width: 100%;

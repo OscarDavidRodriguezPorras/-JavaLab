@@ -8,5 +8,6 @@ router.get("/daily/today", asyncHandler(controller.getTodayChallenge));
 router.get("/:id", asyncHandler(controller.getExercise));
 router.post("/:id/run", asyncHandler(controller.runCode));
 router.post("/:id/submit", asyncHandler(controller.submit));
+router.post("/:id/reset-submission", asyncHandler(controller.resetSubmission));
 
 module.exports = router;

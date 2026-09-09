@@ -1,6 +1,7 @@
 let editorInstance = null;
 let currentExercise = null;
 let hintLevel = 0;
+let exerciseCompleted = false;
 
 (async function main() {
   await initPage("exercises"); // resalta "Ejercicios" en el sidebar aunque estemos en /editor
@@ -96,6 +97,7 @@ async function runCode() {
 }
 
 async function verifyCode() {
+  if (exerciseCompleted) return; // ya está bloqueado, no debería poder llamarse igual
   const btn = document.getElementById("verify-btn");
   btn.disabled = true;
   btn.textContent = "Verificando…";
@@ -113,12 +115,18 @@ async function verifyCode() {
       JavaLab.user = result.user;
       renderTopbarUser();
     }
+
+    if (result.validation.passed) {
+      exerciseCompleted = true;
+      btn.textContent = "✓ Verificado";
+      btn.disabled = true; // se queda bloqueado hasta que le den "Reiniciar"
+      return;
+    }
   } catch (err) {
     showToast(err.message, "error");
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "✓ Verificar";
   }
+  btn.disabled = false;
+  btn.textContent = "✓ Verificar";
 }
 
 function renderFeedback(result) {
@@ -144,14 +152,36 @@ function renderFeedback(result) {
   }
 }
 
-function resetCode() {
+async function resetCode() {
   if (!editorInstance) return;
-  if (!confirm("¿Reiniciar el código a la versión inicial? Perderás tus cambios.")) return;
+  const warning = exerciseCompleted
+    ? "¿Reiniciar el código? Perderás tus cambios y se te quitará el XP que ganaste por este ejercicio, para que puedas volver a intentarlo."
+    : "¿Reiniciar el código a la versión inicial? Perderás tus cambios.";
+  if (!confirm(warning)) return;
+
   editorInstance.setValue(
     currentExercise.starterCode || 'public class Main {\n    public static void main(String[] args) {\n        \n    }\n}'
   );
   document.getElementById("feedback-card").style.display = "none";
   writeConsole("// La salida de tu programa aparecerá aquí.");
+
+  try {
+    const result = await api.exercises.resetSubmission(currentExercise.id, { userId: JavaLab.user.id });
+    if (result.user) {
+      JavaLab.user = result.user;
+      renderTopbarUser();
+    }
+    if (result.reverted) {
+      showToast(`Se quitaron ${result.xpRemoved} XP. Ya puedes volver a intentarlo.`, "success");
+    }
+  } catch (err) {
+    showToast(err.message, "error");
+  }
+
+  exerciseCompleted = false;
+  const verifyBtn = document.getElementById("verify-btn");
+  verifyBtn.disabled = false;
+  verifyBtn.textContent = "✓ Verificar";
 }
 
 async function requestHint() {

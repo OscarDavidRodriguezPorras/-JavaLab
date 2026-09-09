@@ -42,6 +42,10 @@ function renderLayout(activeKey) {
         <a class="nav-item" href="#" id="reset-profile-link">
           <span class="nav-item__icon">🚪</span> Cerrar sesión
         </a>
+        <p class="sidebar__credit">
+          Desarrollado por
+          <a href="https://oscardavidrodriguezporras.github.io/portafolio/" target="_blank" rel="noopener noreferrer">Oscar David Rodríguez Porras</a>
+        </p>
       </div>
     </aside>
   `;

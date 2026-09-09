@@ -27,6 +27,7 @@ function emptyProgress(userId) {
     userId,
     topics: {}, // { "Variables": { completed: 0, correct: 0, errors: 0, percent: 0 } }
     weaknesses: {}, // { "parseInt": 4, "if/else": 2 }
+    completedExercises: {}, // { "exercise_abc123": { xp, code, completedAt } } — evita re-ganar XP y guarda la solución
     totalExercisesCompleted: 0,
     updatedAt: new Date().toISOString(),
   };
@@ -34,7 +35,9 @@ function emptyProgress(userId) {
 
 async function getProgress(userId) {
   const existing = await drive.readJson("progress", `${userId}_progress.json`);
-  return existing || emptyProgress(userId);
+  if (!existing) return emptyProgress(userId);
+  if (!existing.completedExercises) existing.completedExercises = {};
+  return existing;
 }
 
 async function saveProgress(progress) {
@@ -43,12 +46,24 @@ async function saveProgress(progress) {
   return progress;
 }
 
+/** Lee la entrada de completado sin importar si quedó en el formato viejo (solo número) o el nuevo (objeto). */
+function readCompletionXp(entry) {
+  if (entry == null) return 0;
+  return typeof entry === "number" ? entry : entry.xp || 0;
+}
+
 /**
  * Registra el resultado de un ejercicio: actualiza progreso por tema,
  * debilidades detectadas, XP y racha del usuario.
+ *
+ * Si el usuario ya había aprobado este mismo ejercicio antes, NO se vuelve
+ * a sumar XP ni a contar en el progreso, sin importar cuántas veces le dé a
+ * "Verificar" ni si sale y vuelve a entrar. Solo "Repetir" (undoExerciseCompletion)
+ * libera el ejercicio para poder ganar XP de nuevo.
  */
-async function recordExerciseResult({ userId, exercise, validation, hintsUsed = 0 }) {
+async function recordExerciseResult({ userId, exercise, validation, hintsUsed = 0, code = "" }) {
   const progress = await getProgress(userId);
+  const alreadyCompleted = Boolean(validation.passed && progress.completedExercises[exercise.id]);
 
   const topics = exercise.topics && exercise.topics.length ? exercise.topics : ["General"];
   for (const topic of topics) {
@@ -56,14 +71,20 @@ async function recordExerciseResult({ userId, exercise, validation, hintsUsed = 
       progress.topics[topic] = { completed: 0, correct: 0, errors: 0, percent: 0 };
     }
     const t = progress.topics[topic];
-    t.completed += 1;
-    if (validation.passed) t.correct += 1;
-    else t.errors += 1;
-    t.percent = Math.round((t.correct / t.completed) * 100);
+    if (validation.passed) {
+      if (!alreadyCompleted) {
+        t.completed += 1;
+        t.correct += 1;
+        t.percent = Math.round((t.correct / t.completed) * 100);
+      }
+    } else {
+      t.completed += 1;
+      t.errors += 1;
+      t.percent = Math.round((t.correct / t.completed) * 100);
+    }
   }
 
   if (!validation.passed) {
-    // Registrar conceptos fallidos como debilidades para recomendaciones futuras.
     const failedConcepts =
       (exercise.requiredConcepts || [])
         .map((c) => c.name)
@@ -74,22 +95,64 @@ async function recordExerciseResult({ userId, exercise, validation, hintsUsed = 
     }
   }
 
-  progress.totalExercisesCompleted += validation.passed ? 1 : 0;
-  await saveProgress(progress);
-
-  // Actualizar XP / nivel / racha del usuario.
   const usersService = require("./usersService");
   let xpGained = 0;
   let user = null;
-  if (validation.passed) {
+
+  if (validation.passed && !alreadyCompleted) {
+    progress.totalExercisesCompleted += 1;
     const baseXp = xpForDifficulty(exercise.difficulty);
     const penalty = Math.min(hintsUsed * HINT_PENALTY_PER_HINT, 0.45);
     xpGained = Math.round(baseXp * (1 - penalty));
+    progress.completedExercises[exercise.id] = { xp: xpGained, code, completedAt: new Date().toISOString() };
     user = await usersService.addXp(userId, xpGained);
     user = await usersService.touchStreak(userId);
+  } else {
+    user = await usersService.getUser(userId);
   }
 
-  return { progress, xpGained, user };
+  await saveProgress(progress);
+  return { progress, xpGained, user, alreadyCompleted };
+}
+
+/**
+ * Deshace la aprobación de un ejercicio: le quita el XP ganado, revierte el
+ * conteo de ese tema en el progreso, y libera el ejercicio para poder
+ * volver a ganar XP la próxima vez que lo apruebe. Se llama cuando el
+ * estudiante le da "Reiniciar" en el editor sobre un ejercicio ya completado.
+ */
+async function undoExerciseCompletion({ userId, exerciseId }) {
+  const usersService = require("./usersService");
+  const progress = await getProgress(userId);
+
+  const entry = progress.completedExercises[exerciseId];
+  const xpToRemove = readCompletionXp(entry);
+  if (!entry || !xpToRemove) {
+    return { progress, user: await usersService.getUser(userId), reverted: false, xpRemoved: 0 };
+  }
+
+  delete progress.completedExercises[exerciseId];
+  progress.totalExercisesCompleted = Math.max(0, (progress.totalExercisesCompleted || 0) - 1);
+
+  const exercisesService = require("./exercisesService");
+  const exercise = await exercisesService.getExercise(exerciseId);
+  const topics = exercise && exercise.topics && exercise.topics.length ? exercise.topics : ["General"];
+  for (const topic of topics) {
+    const t = progress.topics[topic];
+    if (t) {
+      t.completed = Math.max(0, t.completed - 1);
+      t.correct = Math.max(0, t.correct - 1);
+      t.percent = t.completed > 0 ? Math.round((t.correct / t.completed) * 100) : 0;
+    }
+  }
+  await saveProgress(progress);
+
+  const user = await usersService.getUser(userId);
+  const newXp = Math.max(0, (user.xp || 0) - xpToRemove);
+  const newLevel = levelForXp(newXp).level;
+  const updatedUser = await usersService.updateUser(userId, { xp: newXp, level: newLevel });
+
+  return { progress, user: updatedUser, reverted: true, xpRemoved: xpToRemove };
 }
 
 /** Devuelve las 5 debilidades más frecuentes, para la pantalla de recomendaciones. */
@@ -104,6 +167,7 @@ module.exports = {
   getProgress,
   saveProgress,
   recordExerciseResult,
+  undoExerciseCompletion,
   topWeaknesses,
   xpForDifficulty,
   levelForXp,

@@ -70,6 +70,7 @@ const api = {
     today: () => request("/exercises/daily/today"),
     run: (id, payload) => request(`/exercises/${id}/run`, { method: "POST", body: payload }),
     submit: (id, payload) => request(`/exercises/${id}/submit`, { method: "POST", body: payload }),
+    resetSubmission: (id, payload) => request(`/exercises/${id}/reset-submission`, { method: "POST", body: payload }),
   },
 
   progress: {
